@@ -1,7 +1,7 @@
 _ = require( 'underscore')
-$ = require( 'jquery' )
-{doWhen, fail, invoker, cat,plucker, showObject, complement, average, restrict, as, construct, mapcat, interpose, project, rename} = require('./util')
-
+# $ = require( 'jquery' )
+{hasKeys, validator, checker, defaults, fnull, doWhen, fail, invoker, cat,plucker, showObject, complement, average, restrict, as, construct, mapcat, interpose, project, rename} = require './util'
+{person, books, library, zombie} = require './data'
 log = console.log
 comma = ','
 
@@ -47,10 +47,11 @@ log repeatedly 3, () -> 'ha'
 
 log repeatedly 3, () -> Math.floor (Math.random()*10+1)
 
-log repeatedly 3, (n) ->
-  id = 'id' + n
-  $('body').append $('<p>0delay</p>').attr('id', id)
-  id
+# -- needs jquery (npm install jquery)
+# log repeatedly 3, (n) ->
+#   id = 'id' + n
+#   $('body').append $('<p>0delay</p>').attr('id', id)
+#   id
 
 doUntil = (f, check, init) ->
   ret = []
@@ -91,3 +92,82 @@ log sumProduct 3
 
 rev = invoker 'reverse', Array.prototype.reverse
 log _.map [[1..3]], rev
+
+#
+uniqueString = (len) -> Math.random()
+  .toString(36)
+  .substr(2, len)
+
+log uniqueString 12
+
+uniqueString = (prefix) ->
+  [prefix, new Date().getTime()].join ''
+
+log uniqueString 'sam'
+log uniqueString 'trupti'
+
+makeUniqueStringFunction = (start) ->
+  counter = start
+  (prefix) -> [prefix, counter++].join ''
+
+uniqueString = makeUniqueStringFunction 12
+log uniqueString 'Sam&Dave'
+log uniqueString 'Sam&Dave'
+log uniqueString 'Sam&Dave'
+
+# guarding against null
+
+holy = [1..10]
+log _.reduce holy, (total, n) -> total * n
+holy[3] = null
+log _.reduce holy, (total, n) -> total * n
+
+safeMul = fnull ((total, n) -> total * n), 1, 1
+log _.reduce holy, safeMul
+log safeMul null, undefined
+
+doSomething = (config) ->
+  lookup = defaults {critical: 999}
+  lookup config, 'critical'
+
+log doSomething { critical: 1000 }
+log doSomething {}
+
+alwaysPasses = checker (always true), (always true)
+log alwaysPasses {}
+
+fails = (always false)
+fails.message = "D'oh"
+alwaysFails = checker fails 
+log alwaysFails {}
+
+gonnaFail = checker validator 'ZOMG!', always false
+log gonnaFail 50
+
+aMap = (obj) ->
+  _.isObject obj
+
+checkCmd = checker validator 'must be a map', aMap
+
+log checkCmd {}
+log checkCmd 42
+
+log _([1..3])
+  .chain()
+  .map( (x) -> 2 * x )
+  .map( (x) -> x * 3 )
+  .value()
+
+log _.chain([1..3])
+  .map( (x) -> 2* x )
+  .tap( (x) -> log x )
+  .map( (x) -> x * 3 )
+  .value()
+
+hasSome = hasKeys 'title', 'ed'
+log (plucker 1) library
+log hasSome (plucker 1) library
+checks = checker (validator "must be a map", aMap), (hasKeys 'msg', 'type')
+log checks {msg: 'blah', type: 1}
+log checks "nope"
+log checks {msg: 'huh'}
